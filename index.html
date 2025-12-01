@@ -171,11 +171,18 @@
   
   <!-- Bottom Right Credits -->
   <div class="absolute bottom-4 right-4 text-xs text-accent text-right p-2 bg-primary">
-      Credits: 1308김태연, 1315오윤아,1317이가현
+      Credits: 1308김태연, 1315오윤아, 1317이가현
   </div>
 
   <script>
-    const BACKEND_URL = 'https://hyocard.onrender.com';
+    // --------------------------------------------------------------------------------
+    // ⚠️ IMPORTANT: REPLACE THIS URL with your actual Render service public URL
+    // e.g., 'https://your-service-name.onrender.com'
+    // --------------------------------------------------------------------------------
+    const BACKEND_URL = '[YOUR_RENDER_BACKEND_URL_HERE]';
+    // --------------------------------------------------------------------------------
+
+
     // --- JavaScript Logic (Translated error messages) ---
     const sendBtn = document.getElementById('send');
     const exportBtn = document.getElementById('export-anki');
@@ -220,6 +227,12 @@
     };
 
     sendBtn.onclick = async () => {
+      if (BACKEND_URL === '[YOUR_RENDER_BACKEND_URL_HERE]' || BACKEND_URL.length < 10) {
+            errorContainer.classList.remove('hidden');
+            errorMsg.innerText = "백엔드 URL이 설정되지 않았습니다. index.html 파일에서 BACKEND_URL을 Render 서비스 URL로 업데이트하세요.";
+            return;
+      }
+      
       const file = document.getElementById('file').files[0];
       const mode = document.getElementById('mode').value;
 
@@ -244,11 +257,17 @@
       fd.append('mode', mode);
 
       try {
-        const res = await fetch('https://hyocard.onrender.com/', {
+        // Construct the full URL using the defined BACKEND_URL variable
+        const fullUrl = `${BACKEND_URL}/process`;
+        
+        const res = await fetch(fullUrl, {
           method: 'POST',
           body: fd
         });
 
+        // The 404 error was likely due to the wrong base URL. 
+        // We handle non-OK responses below.
+        
         const data = await res.json();
 
         if (!res.ok) {
@@ -296,7 +315,4 @@
     };
   </script>
 </body>
-
 </html>
-
-
