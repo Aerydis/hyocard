@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hyocard </title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Neobrutalist Flat Style Definition */
+    /* Color 1 (Background): Cream/Beige - #FAF0E6 */
+    /* Color 2 (Accent/Lines): Dark Teal/Slate - #1A4542 */
+    :root {
+      --bg-primary: #efeef3; 
+      --color-accent: #17122c; 
+      --color-soft-accent: #d0bfcf; /* Softer accent for hover effects */
+      --line-width: 1px; /* Subtle line for the grid and interactive elements */
+    }
+
+    .bg-primary { background-color: var(--bg-primary); }
+    .text-accent { color: var(--color-accent); }
+    .border-accent { border-color: var(--color-accent); }
+    
+    /* 1. Gridline Background: Vertical and Horizontal stripes for calm effect */
+    .gridline-bg {
+        background-color: var(--bg-primary);
+        background-image: 
+            /* Vertical lines */
+            linear-gradient(to right, var(--color-soft-accent) var(--line-width), transparent var(--line-width)),
+            /* Horizontal lines */
+            linear-gradient(to bottom, var(--color-soft-accent) var(--line-width), transparent var(--line-width));
+        background-size: 25px 25px; /* Adjust grid spacing */
+        background-repeat: repeat;
+    }
+
+    /* 2. Flat Line Styling for Content Areas (Minimal Border) */
+    .flat-content-area {
+        border: var(--line-width) solid var(--color-accent); /* Minimal border for separation */
+        border-radius: 0;
+        background-color: var(--bg-primary);
+        padding: 1rem;
+    }
+    
+    /* Interactive Element Styling: Minimal Border */
+    .flat-interactive {
+      border: var(--line-width) solid var(--color-accent);
+      border-radius: 0;
+      transition: background-color 0.1s;
+      font-weight: bold;
+      text-transform: uppercase;
+      background-color: var(--bg-primary); /* Ensure clear background */
+      color: var(--color-accent);
+    }
+
+    /* Button and Input hover/active effects */
+    .flat-interactive:hover:not(:disabled) {
+        background-color: var(--color-accent);
+        color: var(--bg-primary);
+    }
+    .flat-interactive:active:not(:disabled) {
+        background-color: var(--bg-primary); 
+        color: var(--color-accent); 
+    }
+    .flat-interactive:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background-color: var(--bg-primary);
+        color: var(--color-accent);
+    }
+    
+    /* Input/Select Specific Styling */
+    input[type="file"], select {
+      padding: 0.75rem;
+    }
+    
+    /* Filled Button Styling (for SEND and DOWNLOAD) */
+    .flat-interactive.filled {
+        background-color: var(--color-accent);
+        color: var(--bg-primary);
+    }
+    .flat-interactive.filled:hover:not(:disabled) {
+        /* Invert hover colors */
+        background-color: var(--bg-primary);
+        color: var(--color-accent);
+    }
+    
+    /* Spinner color for visibility */
+    .spinner {
+      border: 3px solid rgba(26, 69, 66, 0.2);
+      border-top: 3px solid var(--color-accent);
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      border-radius: 50%;
+    }
+
+  </style>
+</head>
+<!-- Make body relative for absolute positioning of header/footer links -->
+<body class="gridline-bg min-h-screen grid place-items-center p-4 font-mono text-accent relative">
+  
+  <!-- Top Left Feedback Link -->
+  <a href="https://docs.google.com/forms/d/1QAB3rvSCDcFs0CB5ndPvL5LZ09Z0bRSqK2OM1yF2N3M/edit" target="_blank" class="absolute top-4 left-4 text-sm font-bold underline hover:no-underline z-10 p-2 bg-primary">피드백 (설문조사)</a>
+
+  <!-- Main Content Box -->
+  <div class="w-full max-w-2xl grid gap-6 bg-primary p-6"> 
+    <h1 class="text-3xl font-extrabold text-accent text-center border-b-2 border-accent pb-4">
+      <!-- Image Placeholder (using utility colors for styling) -->
+    <img src="hyosung.png" alt="Card App Logo" class="inline w-8 h-8 mr-2 object-contain" style="display: inline-block;"> Hyocard: Gemini 학습도구
+    </h1>
+
+    <!-- 1. Select Image -->
+    <div class="grid">
+      <label for="file" class="text-accent mb-2 font-bold">1. 이미지 업로드</label>
+      <input id="file" type="file" accept="image/*" class="flat-interactive text-sm" />
+    </div>
+
+    <!-- Action Row: Grid with 2 Columns (Responsive) -->
+    <div class="grid grid-cols-1 sm:grid-cols-5 gap-4">
+      
+      <!-- Mode Selection -->
+      <div class="sm:col-span-3 grid">
+        <label for="mode" class="text-accent mb-2 font-bold">2. 출력 모드</label>
+        <select id="mode" class="flat-interactive text-sm h-full">
+          <option value="explain">1. 이미지 설명</option>
+          <option value="flashcards">2. 플래시카드 생성 (JSON)</option>
+        </select>
+      </div>
+      
+      <!-- Send Button -->
+      <div class="sm:col-span-2 grid">
+        <label class="text-accent mb-2 font-bold opacity-0 hidden sm:block">_</label>
+        <button id="send" class="flat-interactive filled text-primary font-bold text-sm px-5 py-2.5 flex items-center justify-center gap-2">
+          전송
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loading" class="hidden flex items-center justify-center gap-4 text-accent border-y border-dashed border-accent py-4">
+      <div class="spinner"></div>
+      <span class="font-bold">처리 중...</span>
+    </div>
+
+    <!-- Export Button (Hidden by default) -->
+    <div id="export-container" class="hidden grid">
+      <label class="text-accent mb-2 font-bold border-t border-accent pt-4">3. 카드 내보내기</label>
+      <button id="export-anki" class="flat-interactive filled text-primary font-bold py-3 px-4 flex items-center justify-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          ANKI 덱 다운로드
+      </button>
+    </div>
+
+    <!-- Output Section -->
+    <div id="output-container" class="hidden grid">
+      <h3 class="text-accent font-bold mb-2 border-t-2 border-accent pt-4">출력 데이터</h3>
+      <!-- Output Display Box: Minimal border, relies on surrounding white space -->
+      <div class="flat-content-area border-dashed border p-4 h-64 overflow-y-auto">
+        <pre id="out" class="text-accent text-sm whitespace-pre-wrap break-words"></pre>
+      </div>
+    </div>
+
+    <!-- Error Section -->
+    <div id="error-container" class="hidden flat-content-area border-red-800 bg-red-100 text-red-800 p-4 relative font-bold">
+      <strong class="font-bold">!! 시스템 오류:</strong>
+      <span id="error-msg" class="block sm:inline ml-2">문제가 발생했습니다.</span>
+    </div>
+
+  </div>
+  
+  <!-- Bottom Right Credits -->
+  <div class="absolute bottom-4 right-4 text-xs text-accent text-right p-2 bg-primary">
+      Credits: 1308김태연, 1315오윤아,1317이가현
+  </div>
+
+  <script>
+    // --- JavaScript Logic (Translated error messages) ---
+    const sendBtn = document.getElementById('send');
+    const exportBtn = document.getElementById('export-anki');
+    const loading = document.getElementById('loading');
+    const outputContainer = document.getElementById('output-container');
+    const exportContainer = document.getElementById('export-container');
+    const errorContainer = document.getElementById('error-container');
+    const outPre = document.getElementById('out');
+    const errorMsg = document.getElementById('error-msg');
+
+    let currentFlashcards = [];
+
+    // Helper to trigger file download
+    const downloadFile = (content, filename) => {
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    exportBtn.onclick = () => {
+        if (!currentFlashcards.length) {
+            errorContainer.classList.remove('hidden');
+            errorMsg.innerText = "내보낼 플래시카드가 없습니다.";
+            return;
+        }
+        
+        // Convert JSON to Anki format: "Question <tab> Answer"
+        const ankiText = currentFlashcards.map(card => {
+            // Replaces newlines with <br> for Anki HTML formatting
+            const q = (card.question || "").replace(/\n/g, "<br>"); 
+            const a = (card.answer || "").replace(/\n/g, "<br>");
+            return `${q}\t${a}`;
+        }).join('\n');
+
+        downloadFile(ankiText, 'gemini_flashcards.txt');
+    };
+
+    sendBtn.onclick = async () => {
+      const file = document.getElementById('file').files[0];
+      const mode = document.getElementById('mode').value;
+
+      // Reset UI
+      errorContainer.classList.add('hidden');
+      outputContainer.classList.add('hidden');
+      exportContainer.classList.add('hidden');
+      currentFlashcards = [];
+      
+      if (!file) {
+        errorContainer.classList.remove('hidden');
+        errorMsg.innerText = "이미지를 먼저 선택해 주세요.";
+        return;
+      }
+
+      loading.classList.remove('hidden');
+      sendBtn.disabled = true;
+      sendBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+      const fd = new FormData();
+      fd.append('image', file);
+      fd.append('mode', mode);
+
+      try {
+        const res = await fetch('http://127.0.0.1:8000/process', {
+          method: 'POST',
+          body: fd
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || `서버 오류: ${res.status}`);
+        }
+
+        outputContainer.classList.remove('hidden');
+        
+        // Try to parse as JSON
+        try {
+            const parsed = JSON.parse(data.result);
+            outPre.innerText = JSON.stringify(parsed, null, 2);
+
+            // Conditional Check: Must be in flashcards mode AND must be a non-empty array
+            if (mode === 'flashcards' && Array.isArray(parsed) && parsed.length > 0) {
+                currentFlashcards = parsed;
+                exportContainer.classList.remove('hidden');
+            } else if (mode === 'flashcards' && Array.isArray(parsed) && parsed.length === 0) {
+                 // Success but zero cards generated
+                 outPre.innerText += "\n\n-- 참고: 이미지에서 추출된 플래시카드가 없습니다. --";
+            } else if (mode === 'flashcards' && !Array.isArray(parsed)) {
+                 // JSON was successfully parsed, but it wasn't an array (e.g., it was an object or string)
+                 outPre.innerText += "\n\n-- 오류: 제미나이가 유효한 JSON 배열을 반환하지 않았습니다. --";
+            }
+        } catch (e) {
+            // If it's just plain text (e.g., Explanation mode OR Gemini returned invalid JSON)
+            outPre.innerText = data.result;
+
+            if (mode === 'flashcards') {
+                errorContainer.classList.remove('hidden');
+                errorMsg.innerText = "플래시카드 모드 실패: 제미나이가 깨끗한 JSON을 반환하지 않았습니다. 원본 응답을 확인하세요.";
+            }
+        }
+
+      } catch (err) {
+        console.error(err);
+        errorContainer.classList.remove('hidden');
+        // Keep the original technical message for debugging, but use a Korean summary for the main error display
+        errorMsg.innerText = `문제가 발생했습니다: ${err.message}`;
+      } finally {
+        loading.classList.add('hidden');
+        sendBtn.disabled = false;
+        sendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+    };
+  </script>
+</body>
+</html>
