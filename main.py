@@ -11,6 +11,7 @@ import json
 app = FastAPI()
 
 # CORS
+# Allow all origins, methods, and headers for the frontend hosted on GitHub pages
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -21,8 +22,19 @@ app.add_middleware(
 
 # Gemini Client
 API_KEY = os.getenv("GEMINI_API_KEY")
+# Using gemini-2.5-flash which is the modern recommended fast model
+MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash") 
+
+# Check for API Key before client initialization
+if not API_KEY:
+    # This will cause the Render service to fail if the environment variable isn't set
+    print("FATAL: GEMINI_API_KEY environment variable is not set.")
+    # Exit or raise error if needed, but for now, we'll initialize the client
+    # This allows it to run locally/in environments where the key is provided differently
+    pass 
+    
 client = genai.Client(api_key=API_KEY)
-MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+
 
 # Prompts
 EXPLAIN_PROMPT = (
@@ -81,8 +93,21 @@ def call_gemini(prompt_template: str, image_bytes: bytes, mime_type: str, mode: 
 
     except Exception as e:
         print(f"Gemini Error: {e}")
+        # Re-raise the error to be caught by the FastAPI handler
         raise RuntimeError(f"Gemini request failed: {e}")
 
+
+# -----------------------------------------------
+# FIX 2: Add Root Route for Render Health Check
+# -----------------------------------------------
+@app.get("/")
+async def root():
+    return {"message": "Hyocard FastAPI service is running. Use /process endpoint for image processing."}
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+# -----------------------------------------------
 
 @app.post("/process")
 async def process(image: UploadFile = File(...), mode: str = Form("explain")):
@@ -100,9 +125,9 @@ async def process(image: UploadFile = File(...), mode: str = Form("explain")):
 
         return {"result": result_text}
 
+    except RuntimeError as e:
+        # Catch explicit RuntimeError from Gemini client and return 500
+        return JSONResponse(status_code=500, content={"error": f"API 처리 오류: {e}"})
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
-
-@app.get("/health")
-async def health():
-    return {"status": "ok"}
+        # Catch general server errors
+        return JSONResponse(status_code=500, content={"error": f"서버 처리 오류: {e}"})
