@@ -38,8 +38,8 @@ client = genai.Client(api_key=API_KEY)
 
 # Prompts
 EXPLAIN_PROMPT = (
-    "You are a clear, friendly Korean tutor. "
-    "Extract the text from the image and write a short explanation (3–6 sentences) in Korean."
+    "You are a clear, friendly Korean tutor."
+    "Extract the text from the image and write an easy and accessible explanation in Korean. Do not print the extracted text in English."
 )
 
 # We update this prompt to be very specific about the JSON schema we want
@@ -131,4 +131,5 @@ async def process(image: UploadFile = File(...), mode: str = Form("explain")):
     except Exception as e:
         # Catch general server errors
         return JSONResponse(status_code=500, content={"error": f"서버 처리 오류: {e}"})
+
 
